@@ -58,7 +58,7 @@ This project helped me understand real-world full-stack development, user data h
 
 ## 👨‍💻 Author
 
-**Sai Harsha Vardhan Votte** **Harinni Sere Yalagandula** **Revanth Sai**
+**Sai Harsha Vardhan Votte**, **Harinni Sere Yalagandula**, **Revanth Sai**
 AI Full-Stack Developer in Progress  
 
 GitHub: https://github.com/harshavardhanvotte-droid  

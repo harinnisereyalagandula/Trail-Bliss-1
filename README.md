@@ -7,11 +7,17 @@ Trail Bliss is a full-stack tourism web application that helps users explore tou
 ## 🚀 Features
 
 -> Secure Login System
+
 -> State-wise tourist place listing
+
 -> Search and filter tourist places
+
 -> Climate & safety info (shows whether it’s safe to travel or not)
+
 -> Offline guide booking system
+
 -> Guide dashboard and schedules
+
 -> Feedback and review system
 
 ---

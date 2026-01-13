@@ -33,7 +33,7 @@ function switchView(viewName, element) {
 // --- 3. LOAD PROFILE DATA ---
 async function loadProfile() {
     try {
-        const res = await fetch(`/api/guide-profile?email=${currentGuideEmail}`);
+        const res = await fetch(`https://trail-bliss.onrender.com/api/guide-profile?email=${currentGuideEmail}`);
         const profile = await res.json();
 
         if (profile) {
@@ -88,7 +88,7 @@ if (profileForm) {
         }
 
         try {
-            const res = await fetch('/api/guide-profile', {
+            const res = await fetch('https://trail-bliss.onrender.com/api/guide-profile', {
                 method: 'POST',
                 body: formData
             });
@@ -117,7 +117,7 @@ let myChart = null; // Global variable to hold chart instance
 
 async function loadBookings() {
     try {
-        const res = await fetch(`/api/guide-bookings?email=${currentGuideEmail}`);
+        const res = await fetch(`https://trail-bliss.onrender.com/api/guide-bookings?email=${currentGuideEmail}`);
         const bookings = await res.json();
         
         const scheduleContainer = document.getElementById('scheduleListContainer');

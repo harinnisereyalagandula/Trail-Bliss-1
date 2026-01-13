@@ -83,7 +83,7 @@ if (signupForm) {
 // ==========================================
 async function registerUser(email, password, role) {
     // FIX: Use relative path so it works on Localhost AND Render
-    const API_URL = '/api/register'; 
+const API_URL = 'https://trail-bliss.onrender.com/api/register';
 
     try {
         const response = await fetch(API_URL, {

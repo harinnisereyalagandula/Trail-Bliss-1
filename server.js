@@ -2,32 +2,58 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const multer = require('multer');
-const path = require('path');
 const bcrypt = require('bcrypt');
-const fs = require('fs');
-
-// --- NEW IMPORTS FOR CLOUDINARY ---
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Use process.env.PORT for Render
+const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+/* ============================
+   CORS – Allow Vercel Frontend
+============================ */
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
-app.use(express.static('public'));
 
+/* ============================
+   Database
+============================ */
 mongoose.connect('mongodb+srv://TrailBliss04:Harsha04@trailbliss.6zqk71c.mongodb.net/?appName=TrailBliss')
-    .then(() => console.log('✅ Connected to MongoDB'))
-    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.log(err));
 
-// --- SCHEMAS ---
-const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    role: { type: String, required: true, enum: ['tourist', 'guide'] }
+/* ============================
+   Cloudinary
+============================ */
+cloudinary.config({
+    cloud_name: 'dvcn1fr7o',
+    api_key: '964939665952476',
+    api_secret: 'g8eq8NuD8_a1yqbwonHt7PkEm3k'
 });
-const User = mongoose.model('TrailBlissUser', userSchema);
+
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: "trailbliss_uploads",
+        allowed_formats: ["jpg", "png", "jpeg", "webp"]
+    }
+});
+const upload = multer({ storage });
+
+/* ============================
+   Schemas
+============================ */
+const userSchema = new mongoose.Schema({
+    email: String,
+    password: String,
+    role: String
+});
+const User = mongoose.model("User", userSchema);
 
 const spotSchema = new mongoose.Schema({
     state: String,
@@ -38,7 +64,7 @@ const spotSchema = new mongoose.Schema({
     lat: Number,
     lng: Number
 });
-const TouristSpot = mongoose.model('TouristSpot', spotSchema);
+const TouristSpot = mongoose.model("Spot", spotSchema);
 
 const feedbackSchema = new mongoose.Schema({
     name: String,
@@ -46,20 +72,18 @@ const feedbackSchema = new mongoose.Schema({
     message: String,
     date: { type: Date, default: Date.now }
 });
-const Feedback = mongoose.model('Feedback', feedbackSchema);
+const Feedback = mongoose.model("Feedback", feedbackSchema);
 
-const guideProfileSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
+const guideSchema = new mongoose.Schema({
+    email: String,
     name: String,
     bio: String,
     experience: String,
     languages: String,
     phone: String,
-    profileImage: String,
-    rating: { type: Number, default: 0 },
-    reviewsCount: { type: Number, default: 0 }
+    profileImage: String
 });
-const GuideProfile = mongoose.model('GuideProfile', guideProfileSchema);
+const Guide = mongoose.model("Guide", guideSchema);
 
 const bookingSchema = new mongoose.Schema({
     touristEmail: String,
@@ -68,224 +92,84 @@ const bookingSchema = new mongoose.Schema({
     spotName: String,
     date: String,
     type: String,
-    status: { type: String, default: 'Pending' },
-    rating: { type: Number, default: 0 },
-    review: { type: String, default: "" },
-    createdAt: { type: Date, default: Date.now }
+    status: { type: String, default: "Pending" }
 });
-const Booking = mongoose.model('Booking', bookingSchema);
+const Booking = mongoose.model("Booking", bookingSchema);
 
-// --- CLOUDINARY CONFIGURATION ---
-// IMPORTANT: Replace these with your actual keys from Cloudinary Dashboard
-cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME || 'dvcn1fr7o', 
-    api_key: process.env.CLOUD_API_KEY || '964939665952476', 
-    api_secret: process.env.CLOUD_API_SECRET || 'g8eq8NuD8_a1yqbwonHt7PkEm3k'
-});
-
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'trailbliss_uploads', // Folder name in Cloudinary
-        allowed_formats: ['jpg', 'png', 'jpeg', 'webp'],
-    },
+/* ============================
+   Auth
+============================ */
+app.post("/api/register", async (req, res) => {
+    const { email, password, role } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    await new User({ email, password: hash, role }).save();
+    res.json({ success: true });
 });
 
-const upload = multer({ storage: storage });
+app.post("/api/login", async (req, res) => {
+    const { email, password, role } = req.body;
+    const user = await User.findOne({ email });
+    if (!user || user.role !== role) return res.json({ error: "Invalid login" });
 
-// --- ROUTES ---
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.json({ error: "Wrong password" });
 
-// Registration
-app.post('/api/register', async (req, res) => {
-    try {
-        const { email, password, role } = req.body;
-        const existingUser = await User.findOne({ email });
-        if (existingUser) return res.status(400).json({ error: "User already exists" });
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({ email, password: hashedPassword, role });
-        await newUser.save();
-        res.json({ success: true, message: "Registration successful!" });
-    } catch (error) {
-        res.status(500).json({ error: "Registration failed" });
-    }
+    res.json({ success: true, role: user.role });
 });
 
-// Login
-app.post('/api/login', async (req, res) => {
-    try {
-        const { email, password, role } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ error: "User not found" });
-
-        if (user.role !== role) return res.status(403).json({ error: `Please log in via the ${user.role} tab.` });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ error: "Invalid password" });
-
-        res.json({ success: true, message: "Login successful", role: user.role });
-    } catch (error) {
-        res.status(500).json({ error: "Login failed" });
-    }
+/* ============================
+   Tourist Spots
+============================ */
+app.get("/api/spots", async (req, res) => {
+    res.json(await TouristSpot.find());
 });
 
-// Get Spots
-app.get('/api/spots', async (req, res) => {
-    try {
-        const spots = await TouristSpot.find();
-        res.json(spots);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch spots" });
-    }
+app.post("/api/spots", upload.single("image"), async (req, res) => {
+    const spot = new TouristSpot({
+        ...req.body,
+        image: req.file.path
+    });
+    await spot.save();
+    res.json({ success: true });
 });
 
-// Add Spot (Using Cloudinary)
-app.post('/api/spots', upload.single('image'), async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ error: "No image uploaded" });
-
-        // Cloudinary provides the URL in req.file.path
-        const imageUrl = req.file.path; 
-
-        const newSpot = new TouristSpot({
-            state: req.body.state,
-            name: req.body.name,
-            category: req.body.category,
-            image: imageUrl, // Saving the Cloudinary URL
-            desc: req.body.desc,
-            lat: req.body.lat,
-            lng: req.body.lng
-        });
-
-        await newSpot.save();
-        res.json({ success: true, message: "Spot added successfully!" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Failed to add spot" });
-    }
+/* ============================
+   Feedback
+============================ */
+app.post("/api/feedback", async (req, res) => {
+    await new Feedback(req.body).save();
+    res.json({ success: true });
 });
 
-// Delete Spot
-app.delete('/api/spots/:id', async (req, res) => {
-    try {
-        await TouristSpot.findByIdAndDelete(req.params.id);
-        res.json({ success: true, message: "Spot deleted!" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to delete spot" });
-    }
+/* ============================
+   Guides
+============================ */
+app.get("/api/guides", async (req, res) => {
+    res.json(await Guide.find());
 });
 
-// Feedback
-app.post('/api/feedback', async (req, res) => {
-    try {
-        const { name, email, message } = req.body;
-        const newFeedback = new Feedback({ name, email, message });
-        await newFeedback.save();
-        res.json({ success: true, message: "Feedback saved!" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to save feedback" });
-    }
+app.post("/api/guide-profile", upload.single("profileImage"), async (req, res) => {
+    const data = { ...req.body };
+    if (req.file) data.profileImage = req.file.path;
+    await Guide.findOneAndUpdate({ email: data.email }, data, { upsert: true });
+    res.json({ success: true });
 });
 
-app.get('/api/view-feedback', async (req, res) => {
-    const messages = await Feedback.find().sort({ date: -1 });
-    res.json(messages);
+/* ============================
+   Booking
+============================ */
+app.post("/api/book", async (req, res) => {
+    await new Booking(req.body).save();
+    res.json({ success: true });
 });
 
-// Guide Routes
-app.get('/api/guides', async (req, res) => {
-    try {
-        const guides = await GuideProfile.find();
-        res.json(guides);
-    } catch (err) { res.status(500).json({ error: err.message }); }
+app.get("/api/tourist-bookings", async (req, res) => {
+    res.json(await Booking.find({ touristEmail: req.query.email }));
 });
 
-app.get('/api/guide-profile', async (req, res) => {
-    const { email } = req.query;
-    try {
-        let profile = await GuideProfile.findOne({ email });
-        if (!profile) {
-            profile = new GuideProfile({ email, name: 'New Guide' });
-            await profile.save();
-        }
-        res.json(profile);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// Update Guide Profile (Using Cloudinary)
-app.post('/api/guide-profile', upload.single('profileImage'), async (req, res) => {
-    try {
-        const { email, name, bio, languages, experience, phone, address } = req.body;
-        const updateData = { name, bio, languages, experience, phone, address };
-
-        if (req.file) {
-            updateData.profileImage = req.file.path; // Cloudinary URL
-        }
-
-        await GuideProfile.findOneAndUpdate({ email }, updateData, { upsert: true, new: true });
-        res.json({ success: true, message: "Profile Updated Successfully" });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Booking Routes
-app.post('/api/book', async (req, res) => {
-    try {
-        const newBooking = new Booking(req.body);
-        await newBooking.save();
-        res.json({ success: true, message: "Booking Request Sent!" });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.put('/api/booking-status', async (req, res) => {
-    const { id, status } = req.body;
-    try {
-        await Booking.findByIdAndUpdate(id, { status });
-        res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.post('/api/complete-trip', async (req, res) => {
-    const { bookingId, rating, review } = req.body;
-    try {
-        await Booking.findByIdAndUpdate(bookingId, {
-            status: 'Completed',
-            rating: parseInt(rating),
-            review: review
-        });
-        res.json({ success: true, message: "Trip completed!" });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/guide-bookings', async (req, res) => {
-    const { email } = req.query;
-    try {
-        const bookings = await Booking.find({ guideEmail: email, type: 'offline' }).sort({dHcreatedAt: -1 });
-        res.json(bookings);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/tourist-bookings', async (req, res) => {
-    const { email } = req.query;
-    try {
-        const bookings = await Booking.find({ touristEmail: email }).sort({ createdAt: -1 });
-        const enhancedBookings = await Promise.all(bookings.map(async (b) => {
-            const guide = await GuideProfile.findOne({ email: b.guideEmail });
-            let contactInfo = "Hidden until accepted";
-            if (b.status === 'Accepted' && guide) {
-                contactInfo = guide.phone || guide.email;
-            }
-            return {
-                ...b._doc,
-                guideName: guide ? guide.name : "Unknown Guide",
-                guideContact: contactInfo
-            };
-        }));
-        res.json(enhancedBookings);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
+/* ============================
+   Start Server
+============================ */
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log("Server running on port " + PORT);
 });

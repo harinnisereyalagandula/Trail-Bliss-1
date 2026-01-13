@@ -1,5 +1,5 @@
 // --- GLOBAL VARIABLES ---
-const API_URL = '/api/spots'; 
+const API_URL = 'https://trail-bliss.onrender.com/api/spots';
 let map; 
 let currentSpotLat = 0;
 let currentSpotLng = 0;
@@ -302,7 +302,7 @@ function startRouting() {
 async function loadGuidesDropdown() {
     const select = document.getElementById('guideSelect');
     try {
-        const res = await fetch('/api/guides');
+        const res = await fetch('https://trail-bliss.onrender.com/api/guides');
         availableGuides = await res.json();
 
         select.innerHTML = '<option value="">-- Select a Guide --</option>';
@@ -345,7 +345,7 @@ if (bookingForm) {
         };
 
         try {
-            const res = await fetch('/api/book', {
+            const res = await fetch('https://trail-bliss.onrender.com/api/book', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -500,7 +500,7 @@ if (feedbackForm) {
         const message = document.getElementById('feedbackMessage').value;
 
         try {
-            const response = await fetch('/api/feedback', {
+            const response = await fetch('https://trail-bliss.onrender.com/api/feedback', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, message })
@@ -551,7 +551,7 @@ async function openMyBookings() {
     listContainer.innerHTML = '<p style="text-align:center;">Fetching status...</p>';
 
     try {
-        const res = await fetch(`/api/tourist-bookings?email=${userEmail}`);
+        const res = await fetch(`https://trail-bliss.onrender.com/api/tourist-bookings?email=${userEmail}`);
         const bookings = await res.json();
 
         if (!bookings || bookings.length === 0) {
@@ -625,7 +625,7 @@ if(tripFeedbackForm){
         const review = document.getElementById('tripReview').value;
 
         try {
-            const res = await fetch('/api/complete-trip', {
+            const res = await fetch('https://trail-bliss.onrender.com/api/complete-trip', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bookingId, rating, review })

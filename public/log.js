@@ -66,7 +66,7 @@ async function handleLogin(event, role) {
     const password = form.querySelector('input[type="password"]').value;
 
     // FIX: Use relative path
-    const API_URL = '/api/login';
+    const API_URL = 'https://trail-bliss.onrender.com/api/login';
 
     try {
         const response = await fetch(API_URL, {

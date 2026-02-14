@@ -61,4 +61,4 @@ This project helped me understand real-world full-stack development, user data h
 **Sai Harsha Vardhan Votte**, **Harinni Sere Yalagandula**, **Revanth Sai**
   
 
-GitHub: https://github.com/harshavardhanvotte-droid  
+GitHub: https://github.com/harinnisereyalagandula/Trail-Bliss-1.git 

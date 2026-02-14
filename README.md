@@ -58,7 +58,7 @@ This project helped me understand real-world full-stack development, user data h
 
 ## 👨‍💻 Author
 
-**Sai Harsha Vardhan Votte**, **Harinni Sere Yalagandula**, **Revanth Sai**
+ **Harinni Sere Yalagandula** , **Sai Harsha Vardhan Votte**, **Revanth Sai**
   
 
 GitHub: https://github.com/harinnisereyalagandula/Trail-Bliss-1.git 
